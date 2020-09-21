@@ -18,12 +18,12 @@ export default (app, rootDirectory) => {
     })
   )
 
-  app.use("/adyen-hooks", route)
+  app.use("/reepay", route)
 
   route.post(
-    "/capture",
+    "/event",
     bodyParser.json(),
-    middlewares.wrap(require("./capture-hook").default)
+    middlewares.wrap(require("./reepay-events").default)
   )
 
   return app

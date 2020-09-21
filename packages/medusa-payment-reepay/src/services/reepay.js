@@ -1,9 +1,12 @@
 import axios from "axios"
 import _ from "lodash"
-import uuid from "uuid"
-import { BaseService } from "medusa-interfaces"
+import { v4 as uuidv4 } from "uuid"
+import { PaymentService } from "medusa-interfaces"
+import { MedusaError } from "medusa-core-utils"
 
-class ReepayService extends BaseService {
+class ReepayProviderService extends PaymentService {
+  static identifier = "reepay"
+
   constructor(
     { regionService, customerService, cartService, totalsService },
     options
@@ -23,6 +26,10 @@ class ReepayService extends BaseService {
     this.reepayCheckoutApi = this.initReepayCheckout()
 
     this.reepayApi = this.initReepayApi()
+  }
+
+  getOptions() {
+    return this.options_
   }
 
   initReepayCheckout() {
@@ -58,10 +65,9 @@ class ReepayService extends BaseService {
     const request = {
       order: {
         handle: cart._id,
-        amount: total,
+        amount: total * 100,
         currency: region.currency_code,
         customer: {
-          handle: cart.customer_id,
           email: cart.email,
         },
       },
@@ -69,8 +75,6 @@ class ReepayService extends BaseService {
       accept_url: "http://localhost:8000/checkout/payment",
       cancel_url: "http://localhost:8000/checkout",
     }
-
-    console.log(request)
 
     try {
       return this.reepayCheckoutApi.post("/charge", request)
@@ -93,28 +97,28 @@ class ReepayService extends BaseService {
 
   /**
    * Status for Reepay payment
-   * @param {Object} data - payment method data from cart
+   * @param {Object} paymentMethod - payment method data from cart
    * @returns {string} the status of the payment
    */
-  async getStatus(data) {
-    const { handle } = data
-    const object = await this.reepayApi.get(`/charge/${handle}`)
+  async getStatus(paymentMethod) {
+    const { invoice } = paymentMethod
+    const { data } = await this.reepayApi.get(`/charge/${invoice}`)
 
     let status = "initial"
 
-    if (object.state === "created") {
+    if (data.state === "created") {
       return status
     }
 
-    if (object.state === "authorized") {
+    if (data.state === "authorized") {
       status = "authorized"
     }
 
-    if (object.state === "settled") {
+    if (data.state === "settled") {
       status = "succeeded"
     }
 
-    if (object.state === "failed") {
+    if (data.state === "failed") {
       status = "cancelled"
     }
 
@@ -125,49 +129,17 @@ class ReepayService extends BaseService {
    * Creates Reepay payment object
    * @returns {Object} empty payment data
    */
-  async createPayment(_) {
-    return {}
+  async createPayment(cart) {
+    return { invoice: cart._id }
   }
 
-  async retrievePayment(data) {
-    const { handle } = data
+  async retrievePayment(paymentMethod) {
+    const { invoice } = paymentMethod
 
     try {
-      return this.reepayApi.get(`/charge/${handle}`)
+      const { data } = await this.reepayApi.get(`/charge/${invoice}`)
+      return data
     } catch (error) {
-      throw error
-    }
-  }
-
-  /**
-   * Creates and authorizes a Reepay payment
-   * @returns {Object} payment data result
-   */
-  async authorizePayment(cart) {
-    const total = await this.totalsService_.getTotal(cart)
-    const region = await this.regionService_.retrieve(cart.region_id)
-
-    const paymentMethods = this.retrievePaymentMethods(cart)
-
-    const request = {
-      order: {
-        handle: cart._id,
-        amount: total,
-        currency: region.currency_code,
-        customer: {
-          handle: cart.customer_id,
-          email: cart.email,
-        },
-      },
-      payment_methods: paymentMethods,
-      accept_url: "http://localhost:8000/checkout/payment",
-      cancel_url: "http://localhost:8000/checkout",
-    }
-
-    try {
-      return this.reepayCheckoutApi.post("/payments", request)
-    } catch (error) {
-      console.log(error)
       throw error
     }
   }
@@ -183,16 +155,15 @@ class ReepayService extends BaseService {
     try {
       const captured = await this.reepayApi.post(`/charge/${handle}/settle`)
 
-      if (captured.state !== "settled") {
+      if (captured.data.state !== "settled") {
         throw new MedusaError(
           MedusaError.Types.INVALID_ARGUMENT,
           "Could not process capture"
         )
       }
 
-      return captured
+      return "processing_capture"
     } catch (error) {
-      console.log(error)
       throw error
     }
   }
@@ -207,11 +178,22 @@ class ReepayService extends BaseService {
     const { handle } = data
 
     try {
-      return this.reepayApi.post("/refund", {
+      const refunded = await this.reepayApi.post("/refund", {
         invoice: handle,
-        key: uuid.v4(),
-        amount: amountToRefund,
+        key: uuidv4(),
+        amount: amountToRefund * 100,
       })
+
+      console.log(refunded)
+
+      if (refunded.data.state !== "refunded") {
+        throw new MedusaError(
+          MedusaError.Types.INVALID_ARGUMENT,
+          "Could not process capture"
+        )
+      }
+
+      return "processing_refund"
     } catch (error) {
       throw error
     }
@@ -243,4 +225,4 @@ class ReepayService extends BaseService {
   }
 }
 
-export default ReepayService
+export default ReepayProviderService
