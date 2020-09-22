@@ -12,7 +12,9 @@ class ReepayProviderService extends PaymentService {
    * {
    *    api_key: "foo_bar_42",
    *    payment_methods: ["applepay", "mobilepay", "card"],
-   *    webhook_secret: "top_secret"
+   *    webhook_secret: "top_secret",
+   *    accept_url: "www.epic-webshop.com/checkout/payment",
+   *    cancel_url: "www.epic-webshop.com/checkout"
    * }
    */
 
@@ -79,8 +81,8 @@ class ReepayProviderService extends PaymentService {
         },
       },
       payment_methods: this.options_.payment_methods,
-      accept_url: "http://localhost:8000/checkout/payment",
-      cancel_url: "http://localhost:8000/checkout",
+      accept_url: this.options_.accept_url,
+      cancel_url: this.options_.cancel_url,
     }
 
     try {
@@ -89,17 +91,6 @@ class ReepayProviderService extends PaymentService {
       console.log(error)
       throw error
     }
-  }
-
-  /**
-   * Retrieve payment methods from Reepay
-   * @param {Cart} cart - cart to fetch payment methods for
-   * @returns {[string]} payment methods
-   */
-  retrievePaymentMethods(cart) {
-    return cart.payment_sessions
-      .filter((ps) => ps.provider_id.includes("-reepay"))
-      .map((ps) => ps.provider_id.split("-reepay")[0])
   }
 
   /**
