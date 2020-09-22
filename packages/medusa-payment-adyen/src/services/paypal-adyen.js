@@ -1,8 +1,8 @@
 import _ from "lodash"
 import { PaymentService } from "medusa-interfaces"
 
-class GooglePayAdyenService extends PaymentService {
-  static identifier = "googlepayAdyen"
+class PayPalAdyenService extends PaymentService {
+  static identifier = "paypal-adyen"
 
   constructor({ adyenService }) {
     super()
@@ -30,8 +30,8 @@ class GooglePayAdyenService extends PaymentService {
     return {}
   }
 
-  async authorizePayment(cart, paymentMethod) {
-    return this.adyenService_.authorizePayment(cart, paymentMethod)
+  async authorizePayment(cart, paymentMethod, amount) {
+    return this.adyenService_.authorizePayment(cart, paymentMethod, amount)
   }
 
   async retrievePayment(data) {
@@ -47,28 +47,16 @@ class GooglePayAdyenService extends PaymentService {
   }
 
   async capturePayment(data) {
-    try {
-      return this.adyenService_.capturePayment(data)
-    } catch (error) {
-      throw error
-    }
+    return this.adyenService_.capturePayment(data)
   }
 
-  async refundPayment(data) {
-    try {
-      return this.adyenService_.refundPayment(data)
-    } catch (error) {
-      throw error
-    }
+  async refundPayment(data, amountToRefund) {
+    return this.adyenService_.refundPayment(data, amountToRefund)
   }
 
   async cancelPayment(data) {
-    try {
-      return this.adyenService_.cancelPayment(data)
-    } catch (error) {
-      throw error
-    }
+    return this.adyenService_.cancelPayment(data)
   }
 }
 
-export default GooglePayAdyenService
+export default PayPalAdyenService

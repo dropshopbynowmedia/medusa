@@ -27,6 +27,12 @@ export default (app, rootDirectory) => {
   )
 
   route.post(
+    "/apple-pay-session",
+    bodyParser.json(),
+    middlewares.wrap(require("./apple-pay-session").default)
+  )
+
+  route.post(
     "/authorize",
     bodyParser.json(),
     middlewares.wrap(require("./authorize-payment").default)
@@ -41,13 +47,19 @@ export default (app, rootDirectory) => {
   route.post(
     "/payment-status",
     bodyParser.json(),
-    middlewares.wrap(require("./check-payment-status").default)
+    middlewares.wrap(require("./check-payment-result").default)
+  )
+  
+  route.post(
+    "/additional-details",
+    bodyParser.json(),
+    middlewares.wrap(require("./additional-details").default)
   )
 
-  route.get(
-    "/payment-status",
+  route.post(
+    "/update-cart-payment/:cart_id",
     bodyParser.json(),
-    middlewares.wrap(require("./check-payment-status").default)
+    middlewares.wrap(require("./update-cart-payment").default)
   )
 
   return app

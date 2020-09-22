@@ -3,8 +3,12 @@ import { Validator, MedusaError } from "medusa-core-utils"
 export default async (req, res) => {
   const schema = Validator.object().keys({
     cart_id: Validator.string().required(),
-    provider_id: Validator.string().required(),
-    payment_data: Validator.object().required(),
+    payment_method: Validator.object()
+      .keys({
+        provider_id: Validator.string().required(),
+        data: Validator.object(),
+      })
+      .required(),
   })
 
   const { value, error } = schema.validate(req.body)
@@ -14,45 +18,46 @@ export default async (req, res) => {
 
   try {
     const cartService = req.scope.resolve("cartService")
-    const paymentProvider = req.scope.resolve(`pp_${value.provider_id}`)
+    const paymentProvider = req.scope.resolve(
+      `pp_${value.payment_method.provider_id}`
+    )
+    const regionService = req.scope.resolve("regionService")
+    const totalsService = req.scope.resolve("totalsService")
 
     const cart = await cartService.retrieve(value.cart_id)
 
-    const { data } = await paymentProvider.authorizePayment(
-      cart,
-      value.payment_data.paymentMethod
-    )
+    const region = await regionService.retrieve(cart.region_id)
+    const total = await totalsService.getTotal(cart)
 
-    const transactionReference = data.pspReference
-
-    let newPaymentSession = cart.payment_sessions.find(
-      (ps) => ps.provider_id === value.provider_id
-    )
-
-    newPaymentSession = {
-      ...newPaymentSession,
-      data,
+    const amount = {
+      currency: region.currency_code,
+      value: total * 100,
     }
 
-    await cartService.setMetadata(
-      cart._id,
-      "adyen_transaction_ref",
-      transactionReference
+    // Shopper IP address for risk valuation
+    const ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress
+
+    const authorizedPayment = await paymentProvider.authorizePayment(
+      cart,
+      value.payment_method,
+      amount,
+      ip
     )
 
-    await cartService.updatePaymentSession(
-      cart._id,
-      value.provider_id,
-      newPaymentSession
-    )
+    // MongoDB does not allow us to store keys with dots
+    if (authorizedPayment.additionalData) {
+      delete data.additionalData["recurring.shopperReference"]
+      delete data.additionalData["recurring.recurringDetailReference"]
+    }
 
-    await cartService.setPaymentMethod(cart._id, {
-      provider_id: value.provider_id,
-      data,
-    })
+    authorizedPayment.amount = amount
+    value.payment_method.data = authorizedPayment
 
-    res.status(200).json({ data })
+    await cartService.setPaymentMethod(cart._id, value.payment_method)
+
+    res.status(200).json({ data: authorizedPayment })
   } catch (err) {
+    console.log(err)
     throw err
   }
 }

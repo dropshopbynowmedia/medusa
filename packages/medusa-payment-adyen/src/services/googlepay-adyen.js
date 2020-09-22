@@ -1,13 +1,15 @@
 import _ from "lodash"
 import { PaymentService } from "medusa-interfaces"
 
-class IdealAdyenService extends PaymentService {
-  static identifier = "idealAdyen"
+class GooglePayAdyenService extends PaymentService {
+  static identifier = "paywithgoogle-adyen"
 
-  constructor({ adyenService }) {
+  constructor({ adyenService, shippingProfileService }) {
     super()
 
     this.adyenService_ = adyenService
+
+    this.shippingProfileService_ = shippingProfileService
   }
 
   /**
@@ -26,12 +28,17 @@ class IdealAdyenService extends PaymentService {
     return status
   }
 
-  async createPayment(_) {
-    return {}
+  async createPayment(cart) {
+    const shippingOptions = await this.shippingProfileService_.fetchCartOptions(
+      cart
+    )
+    return {
+      shipping_options: shippingOptions,
+    }
   }
 
-  async authorizePayment(cart, paymentMethod) {
-    return this.adyenService_.authorizePayment(cart, paymentMethod)
+  async authorizePayment(cart, paymentMethod, amount) {
+    return this.adyenService_.authorizePayment(cart, paymentMethod, amount)
   }
 
   async retrievePayment(data) {
@@ -47,28 +54,16 @@ class IdealAdyenService extends PaymentService {
   }
 
   async capturePayment(data) {
-    try {
-      return this.adyenService_.capturePayment(data)
-    } catch (error) {
-      throw error
-    }
+    return this.adyenService_.capturePayment(data)
   }
 
-  async refundPayment(data) {
-    try {
-      return this.adyenService_.refundPayment(data)
-    } catch (error) {
-      throw error
-    }
+  async refundPayment(data, amountToRefund) {
+    return this.adyenService_.refundPayment(data, amountToRefund)
   }
 
   async cancelPayment(data) {
-    try {
-      return this.adyenService_.cancelPayment(data)
-    } catch (error) {
-      throw error
-    }
+    return this.adyenService_.cancelPayment(data)
   }
 }
 
-export default IdealAdyenService
+export default GooglePayAdyenService

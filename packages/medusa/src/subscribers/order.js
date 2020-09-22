@@ -6,6 +6,7 @@ class OrderSubscriber {
     eventBusService,
     discountService,
     totalsService,
+    orderService,
   }) {
     this.totalsService_ = totalsService
 
@@ -16,6 +17,8 @@ class OrderSubscriber {
     this.discountService_ = discountService
 
     this.cartService_ = cartService
+
+    this.orderService_ = orderService
 
     this.eventBus_ = eventBusService
 
