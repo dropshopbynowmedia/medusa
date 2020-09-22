@@ -7,6 +7,15 @@ import { MedusaError } from "medusa-core-utils"
 class ReepayProviderService extends PaymentService {
   static identifier = "reepay"
 
+  /**
+   * Options for Reepay
+   * {
+   *    api_key: "foo_bar_42",
+   *    payment_methods: ["applepay", "mobilepay", "card"],
+   *    webhook_secret: "top_secret"
+   * }
+   */
+
   constructor(
     { regionService, customerService, cartService, totalsService },
     options
@@ -60,8 +69,6 @@ class ReepayProviderService extends PaymentService {
     const total = await this.totalsService_.getTotal(cart)
     const region = await this.regionService_.retrieve(cart.region_id)
 
-    const paymentMethods = this.retrievePaymentMethods(cart)
-
     const request = {
       order: {
         handle: cart._id,
@@ -71,7 +78,7 @@ class ReepayProviderService extends PaymentService {
           email: cart.email,
         },
       },
-      payment_methods: paymentMethods,
+      payment_methods: this.options_.payment_methods,
       accept_url: "http://localhost:8000/checkout/payment",
       cancel_url: "http://localhost:8000/checkout",
     }
