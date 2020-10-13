@@ -30,8 +30,8 @@ class MobilePayAdyenService extends PaymentService {
     return {}
   }
 
-  async authorizePayment(cart, paymentMethod, amount) {
-    return this.adyenService_.authorizePayment(cart, paymentMethod, amount)
+  async authorizePayment(cart, data, context) {
+    return this.adyenService_.authorizePayment(cart, data, context)
   }
 
   async retrievePayment(data) {

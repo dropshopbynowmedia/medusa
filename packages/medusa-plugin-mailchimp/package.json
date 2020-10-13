@@ -1,12 +1,12 @@
 {
-  "name": "medusa-payment-adyen",
-  "version": "1.0.10",
-  "description": "Adyen Payment provider for Medusa Commerce",
+  "name": "medusa-plugin-mailchimp",
+  "version": "1.0.11",
+  "description": "Mailchimp newsletter subscriptions",
   "main": "index.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/medusajs/medusa",
-    "directory": "packages/medusa-payment-adyen"
+    "directory": "packages/medusa-plugin-mailchimp"
   },
   "author": "Oliver Juhl",
   "license": "MIT",
@@ -21,10 +21,9 @@
     "@babel/register": "^7.7.4",
     "@babel/runtime": "^7.9.6",
     "client-sessions": "^0.8.0",
-    "cross-env": "^7.0.2",
+    "cross-env": "^5.2.1",
     "eslint": "^6.8.0",
-    "jest": "^25.5.2",
-    "medusa-test-utils": "^0.3.0"
+    "jest": "^25.5.2"
   },
   "scripts": {
     "build": "babel src -d .",
@@ -36,14 +35,12 @@
     "medusa-interfaces": "1.x"
   },
   "dependencies": {
-    "@adyen/api-library": "^5.0.1",
     "@babel/plugin-transform-classes": "^7.9.5",
-    "axios": "^0.19.2",
     "body-parser": "^1.19.0",
     "cors": "^2.8.5",
     "express": "^4.17.1",
+    "mailchimp-api-v3": "^1.14.0",
     "medusa-core-utils": "^1.0.10",
-    "request-ip": "^2.1.3"
-  },
-  "gitHead": "3cc7cbe5124cbcbb75f6e1435db4dcfaa2a60408"
+    "medusa-test-utils": "^1.0.10"
+  }
 }

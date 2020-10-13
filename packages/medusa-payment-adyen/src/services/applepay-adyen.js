@@ -7,12 +7,17 @@ import { PaymentService } from "medusa-interfaces"
 class ApplePayAdyenService extends PaymentService {
   static identifier = "applepay-adyen"
 
-  constructor({ adyenService, shippingProfileService }, options) {
+  constructor(
+    { adyenService, shippingProfileService, regionService },
+    options
+  ) {
     super()
 
     this.adyenService_ = adyenService
 
     this.shippingProfileService_ = shippingProfileService
+
+    this.regionService_ = regionService
 
     this.options_ = options
   }
@@ -37,14 +42,20 @@ class ApplePayAdyenService extends PaymentService {
     const shippingOptions = await this.shippingProfileService_.fetchCartOptions(
       cart
     )
-    return {
-      shipping_options: shippingOptions,
-    }
+
+    const region = await this.regionService_.retrieve(cart.region_id)
+
+    const shipping_options = shippingOptions.map((el) => ({
+      label: `${el.name}`,
+      detail: "",
+      amount: `${el.price * (1 + region.tax_rate)}`,
+      identifier: el._id,
+    }))
+
+    return { shipping_options }
   }
 
   async getApplePaySession(validationUrl) {
-    const endpointURL = `${validationUrl}/paymentSession`
-
     let certificate
     try {
       // Place certificate in root folder
@@ -59,24 +70,32 @@ class ApplePayAdyenService extends PaymentService {
     const httpsAgent = new https.Agent({
       cert: certificate,
       key: certificate,
+      rejectUnauthorized: false,
     })
 
-    return axios.post(
-      endpointURL,
-      {
-        merchantIdentifier: this.options_.applepay_merchant_id,
-        displayName: this.options_.applepay_display_name,
-        initiative: "web",
-        initiativeContext: this.options_.applepay_initiative_context,
-      },
-      {
+    const request = {
+      merchantIdentifier: this.options_.applepay_merchant_id,
+      displayName: this.options_.applepay_display_name,
+      initiative: "web",
+      initiativeContext: this.options_.applepay_initiative_context,
+    }
+
+    try {
+      return axios.post(validationUrl, request, {
         httpsAgent,
-      }
-    )
+      })
+    } catch (error) {
+      console.log(error)
+    }
   }
 
-  async authorizePayment(cart, paymentMethod, amount) {
-    return this.adyenService_.authorizePayment(cart, paymentMethod, amount)
+  async authorizePayment(cart, paymentMethod, amount, shopperIp) {
+    return this.adyenService_.authorizePayment(
+      cart,
+      paymentMethod,
+      amount,
+      shopperIp
+    )
   }
 
   async retrievePayment(data) {
