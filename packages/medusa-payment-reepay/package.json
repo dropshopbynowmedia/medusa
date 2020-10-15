@@ -42,7 +42,7 @@
     "cors": "^2.8.5",
     "express": "^4.17.1",
     "medusa-core-utils": "^1.0.10",
-    "uuid": "^8.3.0"
+    "uuid": "^8.3.1"
   },
   "gitHead": "3cc7cbe5124cbcbb75f6e1435db4dcfaa2a60408"
 }
