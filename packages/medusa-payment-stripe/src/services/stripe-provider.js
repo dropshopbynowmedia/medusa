@@ -197,7 +197,9 @@ class StripeProviderService extends PaymentService {
   async capturePayment(paymentData) {
     const { id } = paymentData
     try {
-      return this.stripe_.paymentIntents.capture(id)
+      await this.stripe_.paymentIntents.capture(id)
+
+      return "captured"
     } catch (error) {
       throw error
     }
@@ -211,10 +213,12 @@ class StripeProviderService extends PaymentService {
   async refundPayment(paymentData, amount) {
     const { id } = paymentData
     try {
-      return this.stripe_.refunds.create({
+      await this.stripe_.refunds.create({
         amount: parseInt(amount * 100),
         payment_intent: id,
       })
+
+      return "refunded"
     } catch (error) {
       throw error
     }

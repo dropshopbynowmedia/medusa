@@ -297,22 +297,7 @@ describe("OrderService", () => {
         })
       } catch (error) {
         expect(error.message).toEqual(
-          "Can't update shipping, billing, items and payment method when order is processed"
-        )
-      }
-    })
-
-    it("throws if payment method update is attempted after fulfillment", async () => {
-      try {
-        await orderService.update(IdMap.getId("fulfilled-order"), {
-          payment_method: {
-            provider_id: "test",
-            profile_id: "test",
-          },
-        })
-      } catch (error) {
-        expect(error.message).toEqual(
-          "Can't update shipping, billing, items and payment method when order is processed"
+          "Can't update shipping, billing and items when order is processed"
         )
       }
     })
@@ -324,7 +309,7 @@ describe("OrderService", () => {
         })
       } catch (error) {
         expect(error.message).toEqual(
-          "Can't update shipping, billing, items and payment method when order is processed"
+          "Can't update shipping, billing and items when order is processed"
         )
       }
     })
@@ -358,6 +343,7 @@ describe("OrderService", () => {
                 _id: IdMap.getId("fulfillment"),
                 data: {},
                 is_canceled: true,
+                items: [],
                 provider_id: "default_provider",
               },
             ],
@@ -493,7 +479,8 @@ describe("OrderService", () => {
                         },
                         quantity: 1,
                       },
-                      fulfilled_quantity: 0,
+                      fulfilled_quantity: 10,
+                      fulfilled: true,
                       quantity: 10,
                     },
                   ],
@@ -1119,14 +1106,16 @@ describe("OrderService", () => {
         },
         {
           $set: {
-            "fulfillments.$": {
-              _id: IdMap.getId("fulfillment"),
-              provider_id: "default_provider",
-              tracking_numbers: ["1234", "2345"],
-              data: {},
-              shipped_at: expect.anything(),
-              metadata: {},
-            },
+            fulfillments: [
+              {
+                _id: IdMap.getId("fulfillment"),
+                provider_id: "default_provider",
+                tracking_numbers: ["1234", "2345"],
+                data: {},
+                shipped_at: expect.anything(),
+                metadata: {},
+              },
+            ],
           },
         }
       )

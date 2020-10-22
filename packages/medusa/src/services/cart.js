@@ -11,6 +11,7 @@ class CartService extends BaseService {
     CUSTOMER_UPDATED: "cart.customer_updated",
     CREATED: "cart.created",
     UPDATED: "cart.updated",
+    PAYMENT_AUTHORIZED: "cart.payment_authorized",
   }
 
   constructor({
@@ -818,14 +819,43 @@ class CartService extends BaseService {
     return session
   }
 
-  /**
-   * Sets a payment method for a cart.
-   * @param {string} cartId - the id of the cart to add payment method to
-   * @param {PaymentMethod} paymentMethod - the method to be set to the cart
-   * @returns {Promise} result of update operation
-   */
-  async setPaymentMethod(cartId, paymentMethod) {
+  async authorizePaymentMethod(
+    cartId,
+    providerId,
+    paymentMethod,
+    context = {}
+  ) {
     const cart = await this.retrieve(cartId)
+
+    // Ensure that payment method is valid for cart
+    await this.validatePaymentMethod_(cart, paymentMethod)
+
+    const authorizedPayment = await this.paymentProviderService_.authorizePayment(
+      cart,
+      providerId,
+      paymentMethod,
+      context
+    )
+
+    paymentMethod.data = authorizedPayment
+
+    return this.cartModel_
+      .updateOne(
+        {
+          _id: cart._id,
+        },
+        {
+          $set: { payment_method: paymentMethod },
+        }
+      )
+      .then(result => {
+        // Notify subscribers
+        this.eventBus_.emit(CartService.Events.PAYMENT_AUTHORIZED, result)
+        return result
+      })
+  }
+
+  async validatePaymentMethod_(cart, paymentMethod) {
     const region = await this.regionService_.retrieve(cart.region_id)
 
     // The region must have the provider id in its providers array
@@ -840,6 +870,19 @@ class CartService extends BaseService {
         `The payment method is not available in this region`
       )
     }
+  }
+
+  /**
+   * Sets a payment method for a cart.
+   * @param {string} cartId - the id of the cart to add payment method to
+   * @param {PaymentMethod} paymentMethod - the method to be set to the cart
+   * @returns {Promise} result of update operation
+   */
+  async setPaymentMethod(cartId, paymentMethod) {
+    const cart = await this.retrieve(cartId)
+
+    // Ensure that payment method is valid for cart
+    await this.validatePaymentMethod_(cart, paymentMethod)
 
     // At this point we can register the payment method.
     return this.cartModel_
@@ -1108,7 +1151,7 @@ class CartService extends BaseService {
    * @param {string} regionId - the id of the region to set the cart to
    * @return {Promise} the result of the update operation
    */
-  async setRegion(cartId, regionId) {
+  async setRegion(cartId, regionId, countryCode) {
     const cart = await this.retrieve(cartId)
     const region = await this.regionService_.retrieve(regionId)
 
@@ -1137,17 +1180,28 @@ class CartService extends BaseService {
       update.items = newItems.filter(i => !!i)
     }
 
-    // If the country code of a shipping address is set we need to clear it
     let shippingAddress = cart.shipping_address || {}
-    if (!_.isEmpty(shippingAddress) && shippingAddress.country_code) {
-      shippingAddress.country_code = ""
+    if (countryCode !== undefined) {
+      if (!region.countries.includes(countryCode)) {
+        throw new MedusaError(
+          MedusaError.Types.NOT_ALLOWED,
+          `Country not available in region`
+        )
+      }
+      shippingAddress.country_code = countryCode
       update.shipping_address = shippingAddress
-    }
+    } else {
+      // If the country code of a shipping address is set we need to clear it
+      if (!_.isEmpty(shippingAddress) && shippingAddress.country_code) {
+        shippingAddress.country_code = ""
+        update.shipping_address = shippingAddress
+      }
 
-    // If there is only one country in the region preset it
-    if (region.countries.length === 1) {
-      shippingAddress.country_code = region.countries[0]
-      update.shipping_address = shippingAddress
+      // If there is only one country in the region preset it
+      if (region.countries.length === 1) {
+        shippingAddress.country_code = region.countries[0]
+        update.shipping_address = shippingAddress
+      }
     }
 
     // Shipping methods are determined by region so the user needs to find a

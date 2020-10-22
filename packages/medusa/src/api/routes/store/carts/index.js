@@ -43,14 +43,13 @@ export default (app, container) => {
     middlewares.wrap(require("./delete-discount").default)
   )
 
-  // Payment sessions
   route.post(
     "/:id/payment-sessions",
     middlewares.wrap(require("./create-payment-sessions").default)
   )
 
   route.post(
-    "/:id/payment-sessions/update",
+    "/:id/payment-sessions/update/:provider_id",
     middlewares.wrap(require("./update-payment-session").default)
   )
 
@@ -58,9 +57,15 @@ export default (app, container) => {
     "/:id/payment-sessions/:provider_id",
     middlewares.wrap(require("./delete-payment-session").default)
   )
+
   route.post(
     "/:id/payment-method",
     middlewares.wrap(require("./update-payment-method").default)
+  )
+
+  route.post(
+    "/:id/payment-method/:provider_id/authorize",
+    middlewares.wrap(require("./authorize-payment-method").default)
   )
 
   // Shipping Options

@@ -62,6 +62,7 @@ export const orders = {
         _id: IdMap.getId("fulfillment"),
         provider_id: "default_provider",
         data: {},
+        items: [],
       },
     ],
     fulfillment_status: "not_fulfilled",
@@ -380,7 +381,7 @@ export const OrderModelMock = {
       orders.orderToRefund.payment_status = "captured"
       return Promise.resolve(orders.orderToRefund)
     }
-    return Promise.resolve()
+    return Promise.resolve({ fulfillments: [] })
   }),
   deleteOne: jest.fn().mockReturnValue(Promise.resolve()),
   startSession: jest.fn().mockReturnValue(

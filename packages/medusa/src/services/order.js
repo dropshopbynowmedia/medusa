@@ -289,7 +289,7 @@ class OrderService extends BaseService {
    */
   async createFromCart(cart) {
     // Create DB session for transaction
-    const dbSession = await mongoose.startSession()
+    const dbSession = await this.orderModel_.startSession()
 
     // Initialize DB transaction
     return dbSession
@@ -415,6 +415,17 @@ class OrderService extends BaseService {
         `Could not find a fulfillment with the provided id`
       )
     }
+    // For each item in the shipment, we set their status to shipped
+    shipment.items.map(item => {
+      const itemIdx = order.items.findIndex(el => el._id.equals(item._id))
+      // Update item in order.items and in fullfillment.items to
+      // ensure consistency
+      if (item !== -1) {
+        item.shipped_quantity = item.quantity
+        order.items[itemIdx].shipped_quantity =
+          order.items[itemIdx].shipped_quantity || 0 + item.quantity
+      }
+    })
 
     const updated = {
       ...shipment,
@@ -431,7 +442,7 @@ class OrderService extends BaseService {
       .updateOne(
         { _id: orderId, "fulfillments._id": fulfillmentId },
         {
-          $set: { "fulfillments.$": updated },
+          $set: { "fulfillments.$": updated, items: order.items },
         }
       )
       .then(result => {
@@ -843,8 +854,8 @@ class OrderService extends BaseService {
           method.provider_id
         )
 
-        const data = provider
-          .createOrder(method.data, method.items, order)
+        const data = await provider
+          .createOrder(method.data, method.items, { ...order })
           .then(res => {
             successfullyFulfilled = [...successfullyFulfilled, ...method.items]
             return res
@@ -873,8 +884,8 @@ class OrderService extends BaseService {
       if (ful) {
         return {
           ...i,
+          fulfilled_quantity: i.fulfilled_quantity + ful.quantity,
           fulfilled: i.quantity === ful.quantity,
-          fulfilled_quantity: ful.quantity,
         }
       }
 
@@ -1009,11 +1020,6 @@ class OrderService extends BaseService {
     )
   }
 
-<<<<<<< HEAD
-    const amount =
-      refundAmount || this.totalsService_.getRefundTotal(order, returnLines)
-    const paymentStatus = await paymentProvider.refundPayment(data, amount)
-=======
   /**
    * Creates a return request for an order, with given items, and a shipping
    * method. If no refundAmount is provided the refund amount is calculated from
@@ -1292,11 +1298,16 @@ class OrderService extends BaseService {
       const paymentProvider = this.paymentProviderService_.retrieveProvider(
         provider_id
       )
-      await paymentProvider.refundPayment(data, toRefund)
+      const paymentStatus = await paymentProvider.refundPayment(data, toRefund)
       update.$push = {
         refunds: {
           amount: toRefund,
         },
+      }
+
+      update.$set = {
+        ...update.$set,
+        payment_status: paymentStatus,
       }
     }
 
