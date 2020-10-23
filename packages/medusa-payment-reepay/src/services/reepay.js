@@ -183,8 +183,6 @@ class ReepayProviderService extends PaymentService {
         amount: amountToRefund * 100,
       })
 
-      console.log(refunded)
-
       if (refunded.data.state !== "refunded") {
         throw new MedusaError(
           MedusaError.Types.INVALID_ARGUMENT,
