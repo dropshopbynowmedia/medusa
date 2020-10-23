@@ -40,6 +40,7 @@ class LineItemService extends BaseService {
       title: Validator.string().required(),
       is_giftcard: Validator.bool().optional(),
       should_merge: Validator.bool().optional(),
+      has_shipping: Validator.bool().optional(),
       description: Validator.string()
         .allow("")
         .optional(),

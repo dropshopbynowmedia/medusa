@@ -408,10 +408,7 @@ class OrderService extends BaseService {
   async createShipment(orderId, fulfillmentId, trackingNumbers, metadata = {}) {
     const order = await this.retrieve(orderId)
 
-    let shipment
-
-    shipment = order.fulfillments.find(f => f._id.equals(fulfillmentId))
-
+    const shipment = order.fulfillments.find(f => f._id.equals(fulfillmentId))
     if (!shipment) {
       throw new MedusaError(
         MedusaError.Types.NOT_FOUND,
