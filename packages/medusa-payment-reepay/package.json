@@ -1,6 +1,6 @@
 {
   "name": "medusa-payment-reepay",
-  "version": "1.0.10",
+  "version": "1.0.11-alpha.585+7222aa5",
   "description": "Reepay Payment provider for Medusa Commerce",
   "main": "index.js",
   "repository": {
@@ -44,5 +44,5 @@
     "medusa-core-utils": "^1.0.10",
     "uuid": "^8.3.1"
   },
-  "gitHead": "3cc7cbe5124cbcbb75f6e1435db4dcfaa2a60408"
+  "gitHead": "7222aa5ed99b114c91d65ef90f4f52aa5d7af339"
 }

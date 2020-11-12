@@ -60,14 +60,20 @@ class ReepaySubscriber {
 
       const toCreate = await this.cartService_.retrieve(cart._id)
 
-      await this.orderService_.createFromCart(toCreate)
+      return this.orderService_.createFromCart(toCreate)
     }
   }
 
   async handleCapture_(event) {
     const cartId = event.invoice
 
-    const order = await this.orderService_.retrieveByCartId(cartId)
+    let order
+    try {
+      order = await this.orderService_.retrieveByCartId(cartId)
+    } catch (error) {
+      // If no order has been made yet, try to do that
+      order = await this.handleAuthorization_(event)
+    }
 
     await this.orderService_.registerPaymentCapture(order._id)
 
