@@ -75,8 +75,6 @@ class ReepaySubscriber {
       order = await this.handleAuthorization_(event)
     }
 
-    await this.orderService_.registerPaymentCapture(order._id)
-
     const paymentMethod = order.payment_method
 
     paymentMethod.data = {
