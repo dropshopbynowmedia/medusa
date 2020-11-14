@@ -72,7 +72,7 @@ class ReepayProviderService extends PaymentService {
     const region = await this.regionService_.retrieve(cart.region_id)
 
     const request = {
-      settle: true,
+      // settle: true,
       order: {
         handle: cart._id,
         amount: total * 100,
